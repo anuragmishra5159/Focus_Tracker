@@ -65,8 +65,53 @@ def extract_domain(url: str) -> str: #convert a url into a domain name
         return ""
     
 
+
+def classify_domain(domain: str, custom_categories: dict = None) -> str:
+    if custom_categories and domain in custom_categories:
+        return custom_categories[domain]
+    if domain in PRODUCTIVE_DOMAINS:
+        return "productive"
+    if domain in DISTRACTING_DOMAINS:
+        return "distracting"
+    if domain in NEUTRAL_DOMAINS:
+        return "neutral"
+    
+    for pattern in PRODUCTIVE_PATTERNS:
+        if re.search(pattern, domain):
+            return "productive"
+    
+    return "neutral"
+
+
 def calculate_focus_score(productive_time: float, total_time: float) -> float:
     if total_time == 0:
         return 0.0
     score = (productive_time / total_time) * 100
     return round(min(score, 100.0), 1)
+
+
+def generate_suggestions(focus_score: float, distracting_time: float, top_distracting: list, streak_days: int) -> list:
+    distracting_hours = distracting_time / 3600
+
+    if focus_score >= 80:
+        if streak_days >= 3:
+            return f"Amazing! You're on a {streak_days}-day focus streak. Keep it up — you're in the top tier of productivity!"
+        return "Excellent focus today! You're crushing your goals. Consider taking short breaks to maintain this momentum."
+
+    if focus_score >= 60:
+        if distracting_hours > 1:
+            site_note = ""
+            if top_distracting:
+                site_note = f" especially {top_distracting[0]}."
+            return f"Good progress! You spent {distracting_hours:.1f} hours on distracting sites{site_note} Try blocking them during peak work hours."
+        return "Decent focus score! Small improvements in cutting distractions could push you over 80."
+
+    if focus_score >= 40:
+        if distracting_hours > 2:
+            return f"You spent {distracting_hours:.1f} hours on distracting content today. Try the Pomodoro technique: 25 min focus, 5 min break."
+        return "Your focus needs improvement. Set specific goals for each work session to stay on track."
+
+    if top_distracting:
+        return f"Focus alert! {top_distracting[0]} alone consumed significant time. Consider using a site blocker during work hours."
+
+    return "Start tracking your productive sites — even 30 minutes of focused work builds momentum!"
